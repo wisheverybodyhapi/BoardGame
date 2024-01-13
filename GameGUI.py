@@ -4,6 +4,8 @@ from tkinter import messagebox
 from tkinter import simpledialog
 from PIL import Image, ImageTk
 import os
+import time
+from Config import *
 
 class GameGUI:
     def __init__(self, board_size):
@@ -36,9 +38,11 @@ class GameGUI:
             # 绘制横线，确保只绘制所需数量的线条
             self.canvas.create_line(self.cell_size, (i + 1) * self.cell_size,
                                     self.canvas_size, (i + 1) * self.cell_size)
+            # time.sleep(0.5)
             # 绘制竖线，同样确保只绘制所需数量的线条
             self.canvas.create_line((i + 1) * self.cell_size, self.cell_size,
                                     (i + 1) * self.cell_size, self.canvas_size)
+            # time.sleep(0.5)
 
     def create_info_window(self):
         info_window = tk.Toplevel(self.window)
@@ -50,7 +54,7 @@ class GameGUI:
         return info_window, info_text
 
     def clear_board(self):
-        # 清空棋盘
+        # 清空棋盘并重新绘制背景和棋盘
         self.canvas.delete("all")
         self.load_background_image()
         self.draw_board()
@@ -62,7 +66,7 @@ class GameGUI:
             for col in range(len(board)):
                 player = board[row][col]
                 if player is not None:
-                    draw_color = "black" if player == "Black" else "white"
+                    draw_color = BLACK if player ==  BLACK else WHITE
                     x = (col + 1) * self.cell_size
                     y = (row + 1) * self.cell_size
                     self.canvas.create_oval(x - self.cell_size // 4, y - self.cell_size // 4,

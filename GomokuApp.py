@@ -1,9 +1,9 @@
 from BoardGameApp import *
 
 class GomokuApp(BoardGameApp):
-    def __init__(self, board_size=15, current_player='Black', history_board=None):
+    def __init__(self, board_size=15, current_player=BLACK, history_board=None):
         super().__init__(board_size, current_player, history_board)
-        self.game_mode = 'gomoku'
+        self.game_mode = GOMOKU
 
     def place_piece(self, event):
         """五子棋落子"""
@@ -14,28 +14,28 @@ class GomokuApp(BoardGameApp):
             x = (column + 1) * self.game_gui.cell_size
             y = (row + 1) * self.game_gui.cell_size
         # 基本的落子逻辑
-        if not self.game_over and self.board[row][column] is None:
-            # 计算最近的行和列
-                self.board[row][column] = self.current_player
-                draw_color = "black" if self.current_player == "Black" else "white"
-                self.history_move.append((self.current_player, row, column))
-                # 在交叉点上绘制棋子
-                self.game_gui.canvas.create_oval(x - self.game_gui.cell_size // 4, y - self.game_gui.cell_size // 4,
-                                        x + self.game_gui.cell_size // 4, y + self.game_gui.cell_size // 4,
-                                        fill=draw_color)
-                # 更新游戏信息
-                self.game_gui.update_info(f"玩家 {self.current_player} 落子于 ({row}, {column})")
+        if self.is_valid_move(row, column):
+            self.board[row][column] = self.current_player
+            draw_color = BLACK if self.current_player == BLACK else WHITE
+            self.history_move.append((self.current_player, row, column))
+            # 在交叉点上绘制棋子
+            self.game_gui.canvas.create_oval(x - self.game_gui.cell_size // 4, y - self.game_gui.cell_size // 4,
+                                    x + self.game_gui.cell_size // 4, y + self.game_gui.cell_size // 4,
+                                    fill=draw_color)
+            # 更新游戏信息
+            self.game_gui.update_info(f"玩家 {self.current_player} 落子于 ({row}, {column})")
 
-                if self.can_undo < 2:
-                    self.can_undo += 1
+            if self.can_undo < 2:
+                self.can_undo += 1
 
-                if self.check_win(row, column):
-                    self.game_gui.update_info(f"玩家 {self.current_player} 胜利！游戏结束！")
-                    messagebox.showinfo("游戏结束", f"{self.current_player} 赢了！")
-                    self.game_over = True
-                else:
-                    self.update_board_snapshots()
-                    self.switch_player()
+            if self.check_win(row, column):
+                winner = BLACKPLAYER if self.current_player == BLACK else WHITEPLAYER
+                self.game_gui.update_info(f"玩家 {winner} 胜利！游戏结束！")
+                messagebox.showinfo("游戏结束", f"{winner} 赢了！")
+                self.game_over = True
+            else:
+                self.update_board_snapshots()
+                self.switch_player()
 
     def check_win(self, x, y):
         # 实现五子棋的胜利条件检查
