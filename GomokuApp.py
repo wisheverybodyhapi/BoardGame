@@ -1,48 +1,48 @@
 from BoardGameApp import *
 
 class GomokuApp(BoardGameApp):
-    def __init__(self, board_size=15, current_player=BLACK, history_board=None):
-        super().__init__(board_size, current_player, history_board)
+    def __init__(self, board_size, current_stone=BLACK, history_board=None, versus_mode=None, difficulty=None, difficulty2=None):
+        super().__init__(board_size, current_stone, history_board, versus_mode, difficulty, difficulty2)
         self.game_mode = GOMOKU
+        self.game_pattern = 'gomoku'
 
-    def place_piece(self, event):
+    def place_piece(self, row, column):
         """五子棋落子"""
-        column = (event.x - self.game_gui.cell_size // 2) // self.game_gui.cell_size
-        row = (event.y - self.game_gui.cell_size // 2) // self.game_gui.cell_size
-        if 0 <= column < self.board_size and 0 <= row < self.board_size:
-            # 计算棋子的中心位置
-            x = (column + 1) * self.game_gui.cell_size
-            y = (row + 1) * self.game_gui.cell_size
+        # 检查是否是合法的落子点
+        if not self.is_valid_move(row, column):
+            return False # 如果不合法，立即返回
+
+        # 在棋盘上放置棋子并绘制棋子
+        self.board[row][column] = self.current_stone
+        self.draw_stone(row, column)
+
         # 基本的落子逻辑
-        if self.is_valid_move(row, column):
-            self.board[row][column] = self.current_player
-            draw_color = BLACK if self.current_player == BLACK else WHITE
-            self.history_move.append((self.current_player, row, column))
-            # 在交叉点上绘制棋子
-            self.game_gui.canvas.create_oval(x - self.game_gui.cell_size // 4, y - self.game_gui.cell_size // 4,
-                                    x + self.game_gui.cell_size // 4, y + self.game_gui.cell_size // 4,
-                                    fill=draw_color)
-            # 更新游戏信息
-            self.game_gui.update_info(f"玩家 {self.current_player} 落子于 ({row}, {column})")
+        self.board[row][column] = self.current_stone
+        self.history_move.append((PLACESTONE, self.current_player.name, self.current_stone, row, column))
 
-            if self.can_undo < 2:
-                self.can_undo += 1
+        # 更新游戏信息
+        self.game_gui.update_info(f"玩家 {self.current_player.name} 落子于 ({row}, {column})")
 
-            if self.check_win(row, column):
-                winner = BLACKPLAYER if self.current_player == BLACK else WHITEPLAYER
-                self.game_gui.update_info(f"玩家 {winner} 胜利！游戏结束！")
-                messagebox.showinfo("游戏结束", f"{winner} 赢了！")
-                self.game_over = True
-            else:
-                self.update_board_snapshots()
-                self.switch_player()
+        if self.can_undo < 2:
+            self.can_undo += 1
+
+        if self.check_win(row, column):
+            winner = self.BLACKPLAYER.name if self.current_stone == BLACK else self.WHITEPLAYER.name
+            self.game_gui.update_info(f"玩家 {winner} 胜利！游戏结束！")
+            messagebox.showinfo("游戏结束", f"{winner} 赢了！")
+            self.game_over = True
+            self.handle_game_end()
+        else:
+            self.update_board_snapshots()
+            self.switch_player()
+        return True
 
     def check_win(self, x, y):
         # 实现五子棋的胜利条件检查
         def count_stones(dx, dy):
             count = 0
             i, j = x + dx, y + dy
-            while 0 <= i < self.board_size and 0 <= j < self.board_size and self.board[i][j] == self.current_player:
+            while 0 <= i < self.board_size and 0 <= j < self.board_size and self.board[i][j] == self.current_stone:
                 count += 1
                 i += dx
                 j += dy

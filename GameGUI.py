@@ -2,6 +2,7 @@ import tkinter as tk
 import time
 from tkinter import messagebox
 from tkinter import simpledialog
+from tkinter import *
 from PIL import Image, ImageTk
 import os
 import time

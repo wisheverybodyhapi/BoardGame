@@ -1,25 +1,23 @@
 from BoardGameApp import *
 
 class GoApp(BoardGameApp):
-    def __init__(self, board_size=19, current_player=BLACK, history_board=None):
-        super().__init__(board_size, current_player, history_board)
+    def __init__(self, board_size, current_stone=BLACK, history_board=None, versus_mode=None, difficulty=None):
+        super().__init__(board_size, current_stone, history_board, versus_mode, difficulty)
         self.game_mode = GO
+        self.game_pattern = 'go'
         self.happen_ko = False
         self.black_capture_count = 0 # 黑方提子数
         self.white_capture_count = 0 # 白方提子数
 
-    def place_piece(self, event):
+    def place_piece(self, row, column):
         self.happen_ko = False
-
-        # 获取落子坐标
-        column, row = self.get_click_position(event)
 
         # 检查是否是合法的落子点
         if not self.is_valid_move(row, column):
-            return  # 如果不合法，立即返回
+            return False # 如果不合法，立即返回
 
         # 在棋盘上放置棋子并绘制棋子
-        self.board[row][column] = self.current_player
+        self.board[row][column] = self.current_stone
         self.draw_stone(row, column)
 
         # 1. 判断是否是自杀点
@@ -28,7 +26,7 @@ class GoApp(BoardGameApp):
             print('captured stones:', captured_stones)
 
             if len(captured_stones) == 0:
-                self.game_gui.update_info('{} 坐标 ({},{}) 没气，禁止自杀！'.format(self.current_player, row, column))
+                self.game_gui.update_info('{} 坐标 ({},{}) 没气，禁止自杀！'.format(self.current_stone, row, column))
                 messagebox.showinfo("违规", "禁止出现自杀行为")
                 self.board[row][column] = None
                 self.game_gui.redraw_board(self.board)
@@ -50,30 +48,15 @@ class GoApp(BoardGameApp):
         # 更新棋盘状态和切换玩家
         if not self.happen_ko:
             # 更新游戏信息
-            self.game_gui.update_info(f"玩家 {self.current_player} 落子于 ({row}, {column})")
-            self.history_move.append((self.current_player, str(row), str(column)))
+            self.game_gui.update_info(f"玩家 {self.current_player.name} 落子于 ({row}, {column})")
+            self.history_move.append((PLACESTONE, self.current_player.name, self.current_stone, row, column))
             self.update_board_snapshots()
             if self.can_undo < 2:
                 self.can_undo += 1
             self.switch_player()
-        self.print_board(self.board)
-
-    def get_click_position(self, event):
-        column = (event.x - self.game_gui.cell_size // 2) // self.game_gui.cell_size
-        row = (event.y - self.game_gui.cell_size // 2) // self.game_gui.cell_size
-        return column, row
-
-    def draw_stone(self, row, column):
-        if 0 <= column < self.board_size and 0 <= row < self.board_size:
-            # 计算棋子的中心位置
-            x = (column + 1) * self.game_gui.cell_size
-            y = (row + 1) * self.game_gui.cell_size
-            draw_color = BLACK if self.board[row][column] == BLACK else WHITE
-            # 在交叉点上绘制棋子
-            self.game_gui.canvas.create_oval(x - self.game_gui.cell_size // 4, y - self.game_gui.cell_size // 4,
-                                    x + self.game_gui.cell_size // 4, y + self.game_gui.cell_size // 4,
-                                    fill=draw_color)
-                
+            return True
+        return False
+        
     def if_happen_ko(self):
         # 判断是否发生了打劫，若发生打劫则恢复棋盘
         if self.is_ko():
@@ -96,8 +79,8 @@ class GoApp(BoardGameApp):
         if checked is None:
             checked = set()
 
-        current_player = self.board[x][y]
-        checked.add(current_player)
+        current_stone = self.board[x][y]
+        checked.add(current_stone)
 
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nx, ny = x + dx, y + dy
@@ -106,7 +89,7 @@ class GoApp(BoardGameApp):
                     checked.add((x, y))
                     if self.board[nx][ny] is None:
                         return False  # 找到一个空点，有气
-                    elif self.board[nx][ny] == current_player and not self.if_suicide(nx, ny, checked):
+                    elif self.board[nx][ny] == current_stone and not self.if_suicide(nx, ny, checked):
                         return False  # 相邻同色棋子组有气
         return True  # 没有找到空点，没有气，是死棋
 
@@ -118,12 +101,12 @@ class GoApp(BoardGameApp):
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nx, ny = row + dx, column + dy
             if 0 <= nx < self.board_size and 0 <= ny < self.board_size:
-                if self.board[nx][ny] is not None and self.board[nx][ny] != self.current_player:
+                if self.board[nx][ny] is not None and self.board[nx][ny] != self.current_stone:
                     if self.if_suicide(nx, ny):
                         # 如果对方的棋子被围死，提走这些棋子
                         captured_positions += self.remove_stones(nx, ny)
                         # 更新提子计数器
-                        if self.current_player == BLACK:
+                        if self.current_stone == BLACK:
                             self.black_capture_count += len(captured_positions)
                         else:
                             self.white_capture_count += len(captured_positions)
@@ -147,7 +130,8 @@ class GoApp(BoardGameApp):
             
     def quit_move(self):
         # 放弃此步
-        self.game_gui.update_info("{}放弃此步".format(self.current_player))
+        self.history_move.append((QUITMOVE, self.current_player.name, self.current_stone))
+        self.game_gui.update_info("{}放弃此步".format(self.current_stone))
         self.switch_player()
 
     def judge_win(self):
@@ -165,15 +149,16 @@ class GoApp(BoardGameApp):
                                     white_territory, white_score))
         winner = None
         if black_score > white_score:
-            winner = BLACKPLAYER
+            winner = self.BLACKPLAYER.name
         elif white_score > black_score:
-            winner = WHITEPLAYER
+            winner = self.WHITEPLAYER.name
         else:
             winner = '平局'
         self.game_gui.update_info("黑方让子{}子，玩家 {} 胜利！游戏结束！".format(komi, winner))
         self.game_gui.update_info(f"玩家 {winner} 胜利！游戏结束！")
         messagebox.showinfo("游戏结束", f"{winner} 赢了！")
         self.game_over = True
+        self.handle_game_end()
 
     def calculate_territory(self):
         black_territory = 0
