@@ -5,40 +5,40 @@ class ReversiApp(BoardGameApp):
     def __init__(self, board_size, current_stone=BLACK, history_board=None, versus_mode=None, difficulty=None):
         super().__init__(board_size, current_stone, history_board, versus_mode, difficulty)
         self.game_mode = REVERSI
-        self.game_pattern = 'reversi'
+        self.game_pattern = REVERSIPATTERN
         self.init_board()
 
     def init_board(self):
         # 初始化棋盘中央的四个棋子
         self.board[4][4], self.board[5][5] = WHITE, WHITE
         self.board[5][4], self.board[4][5] = BLACK, BLACK
-        self.draw_stone(4, 4)
-        self.draw_stone(4, 5)
-        self.draw_stone(5, 4)
-        self.draw_stone(5, 5)
+        self.draw_stone(4, 4, WHITE)
+        self.draw_stone(4, 5, BLACK)
+        self.draw_stone(5, 4, BLACK)
+        self.draw_stone(5, 5, WHITE)
         
-    def place_piece(self, row, column):
+    def place_piece(self, row, column, current_player, current_stone):
 
         # 检查是否是合法的落子点
         if not self.is_valid_move(row, column):
             return False # 如果不合法，立即返回
         
         # 先下棋，后判断
-        self.board[row][column] = self.current_stone
+        self.board[row][column] = current_stone
 
-        self.history_move.append((PLACESTONE, self.current_player.name, self.current_stone, row, column))
+        self.history_move.append((PLACESTONE, current_player, current_stone, row, column))
 
         # 实现翻转对方棋子的逻辑，判断能否翻转对手棋子
-        has_filp = self.flip_opponent_pieces(row, column, self.current_stone)
+        has_filp = self.flip_opponent_pieces(row, column, current_stone)
 
         if has_filp:
             # 在棋盘上放置棋子并绘制棋子
-            self.draw_stone(row, column)
-            self.game_gui.update_info(f"玩家 {self.current_player.name} 落子于 ({row}, {column})")
+            self.draw_stone(row, column, current_stone)
+            self.game_gui.update_info(f"玩家 {current_player} 落子于 ({row}, {column})")
             self.switch_player()
         else:
             # 否则恢复棋盘
-            self.game_gui.update_info(f"玩家 {self.current_player.name} 在({row}, {column})无子可落")
+            self.game_gui.update_info(f"玩家 {current_player} 在({row}, {column})无子可落")
             self.board[row][column] = None
         return True
 
@@ -60,7 +60,7 @@ class ReversiApp(BoardGameApp):
             if 1 <= r < 9 and 1 <= c < 9 and self.board[r][c] == player:
                 for piece_row, piece_col in pieces_to_flip:
                     self.board[piece_row][piece_col] = player
-                    self.draw_stone(piece_row, piece_col)
+                    self.draw_stone(piece_row, piece_col, player)
             all_pieces_to_flip = all_pieces_to_flip + pieces_to_flip
         
         flip_info = ','.join([str(e) for e in all_pieces_to_flip])

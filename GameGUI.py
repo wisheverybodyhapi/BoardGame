@@ -27,12 +27,13 @@ class GameGUI:
         self.info_window, self.info_text = self.create_info_window()
 
     def load_background_image(self):
-        # 使用Pillow加载并调整图片大小  
-        original_image = Image.open(self.background_image_path)
-        resized_image = original_image.resize((self.canvas_size + self.cell_size, self.canvas_size + self.cell_size))
-        self.background_image = ImageTk.PhotoImage(resized_image)
-        # 创建一个背景图像标签并放置在画布上
-        self.background_image_id = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.background_image)
+        try:
+            original_image = Image.open(self.background_image_path)
+            resized_image = original_image.resize((self.canvas_size + self.cell_size, self.canvas_size + self.cell_size))
+            self.background_image = ImageTk.PhotoImage(resized_image)
+            self.background_image_id = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.background_image)
+        except IOError:
+            print("图像文件加载失败")
 
     def draw_board(self):
         for i in range(self.canvas_size):

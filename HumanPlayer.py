@@ -13,7 +13,10 @@ class HumanPlayer:
 
     def make_move(self, event):
         row, column = self.current_game.get_click_position(event)
-        self.current_game.place_piece(row, column)
+        current_stone = self.current_game.current_stone
+        current_player = self.name
+
+        self.current_game.place_piece(row, column, current_player, current_stone)
 
     def connect(self, ip_address, port):
         # 实现玩家的网络连接逻辑

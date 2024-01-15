@@ -12,6 +12,7 @@ class AIPlayer:
     def make_move(self):
         board = self.current_game.board
         current_stone = self.current_game.current_stone
+        current_player = self.name
 
         if self.level == EASY:
             self.current_move = self.random_move(board, current_stone)
@@ -19,7 +20,7 @@ class AIPlayer:
             self.current_move = self.rule_based_move(board, current_stone)
             
         row, column = self.current_move
-        self.current_game.place_piece(row, column)
+        self.current_game.place_piece(row, column, current_player, current_stone)
 
     def random_move(self, board, current_stone):
         # 一级AI落子算法

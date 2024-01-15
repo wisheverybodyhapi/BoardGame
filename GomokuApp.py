@@ -4,30 +4,28 @@ class GomokuApp(BoardGameApp):
     def __init__(self, board_size, current_stone=BLACK, history_board=None, versus_mode=None, difficulty=None, difficulty2=None):
         super().__init__(board_size, current_stone, history_board, versus_mode, difficulty, difficulty2)
         self.game_mode = GOMOKU
-        self.game_pattern = 'gomoku'
+        self.game_pattern = GOMOKUPATTERN
 
-    def place_piece(self, row, column):
+    def place_piece(self, row, column, current_player, current_stone):
         """五子棋落子"""
         # 检查是否是合法的落子点
         if not self.is_valid_move(row, column):
             return False # 如果不合法，立即返回
 
         # 在棋盘上放置棋子并绘制棋子
-        self.board[row][column] = self.current_stone
-        self.draw_stone(row, column)
+        self.board[row][column] = current_stone
+        self.draw_stone(row, column, current_stone)
 
-        # 基本的落子逻辑
-        self.board[row][column] = self.current_stone
-        self.history_move.append((PLACESTONE, self.current_player.name, self.current_stone, row, column))
+        self.history_move.append((PLACESTONE, current_player, current_stone, row, column))
 
         # 更新游戏信息
-        self.game_gui.update_info(f"玩家 {self.current_player.name} 落子于 ({row}, {column})")
-
+        self.game_gui.update_info(f"玩家 {current_player} 落子于 ({row}, {column})")
+        
         if self.can_undo < 2:
             self.can_undo += 1
 
         if self.check_win(row, column):
-            winner = self.BLACKPLAYER.name if self.current_stone == BLACK else self.WHITEPLAYER.name
+            winner = current_player
             self.game_gui.update_info(f"玩家 {winner} 胜利！游戏结束！")
             messagebox.showinfo("游戏结束", f"{winner} 赢了！")
             self.game_over = True

@@ -9,6 +9,10 @@ GO = '围棋'
 REVERSI = '黑白棋'
 REPLAY = '回放录像'
 
+GOMOKUPATTERN = 'gomoku'
+GOPATTERN = 'go'
+REVERSIPATTERN = 'reversi'
+
 PVP = 'Player vs PLayer'
 PVC = 'PLayer vs Computer'
 CVC = 'Computer vs Computer'

@@ -30,15 +30,12 @@ class SettingGUI:
         self.button_reversi = tk.Button(self.window, text=REVERSI, command=lambda: self.select_game_mode(REVERSI), width=self.button_width, height=self.button_height)
         self.button_reversi.pack()
 
-        self.button_replay = tk.Button(self.window, text=REPLAY, command=lambda: self.replay(), width=self.button_width, height=self.button_height)
-        self.button_replay.pack()
-
     def select_game_mode(self, game_mode):
         self.game_mode = game_mode
         self.button_gomoku.pack_forget()
         self.button_go.pack_forget()
         self.button_reversi.pack_forget()
-        self.button_replay.pack_forget()
+
 
         # 游戏类型选择按钮
         self.button_new_game = tk.Button(self.window, text="新游戏", command=lambda: self.select_game_type("新游戏"), width=self.button_width, height=self.button_height)
@@ -47,10 +44,14 @@ class SettingGUI:
         self.button_load_history = tk.Button(self.window, text="加载存档", command=lambda: self.select_game_type("加载存档"), width=self.button_width, height=self.button_height)
         self.button_load_history.pack()
 
+        self.button_replay = tk.Button(self.window, text="回放录像", command=lambda: self.replay(), width=self.button_width, height=self.button_height)
+        self.button_replay.pack()
+
     def select_game_type(self, game_type):
         self.game_type = game_type
         self.button_new_game.pack_forget()
         self.button_load_history.pack_forget()
+        self.button_replay.pack_forget()
 
         if self.game_type == "新游戏":
             self.choose_versus_mode()
@@ -58,12 +59,25 @@ class SettingGUI:
             self.load_game()
 
     def replay(self):
+        self.button_new_game.pack_forget()
+        self.button_load_history.pack_forget()
+        self.button_replay.pack_forget()
         # 实现回放录像功能
+        pattern = None
 
+        if self.game_mode == GOMOKU:
+            pattern = GOMOKUPATTERN
+        elif self.game_mode == GO:
+            pattern = GOPATTERN
+        elif self.game_mode == REVERSI:
+            pattern = REVERSIPATTERN
+            
+        print('pattern', pattern)
         # 1. 列出所有录像文件
-        record_files = [f for f in os.listdir('.') if f.endswith('_record.txt')]
+        record_files = [f for f in os.listdir('.') if f.startswith(pattern + '_') and f.endswith('_record.txt')]
         if not record_files:
             messagebox.showinfo("回放录像", "没有找到录像文件")
+            self.window.destroy()
             return
 
         # 创建一个新窗口来显示录像文件列表
@@ -84,12 +98,53 @@ class SettingGUI:
         select_button = tk.Button(self.replay_window, text="选择", command=lambda: self.load_replay(listbox.get(tk.ACTIVE)))
         select_button.pack()
         
-    def load_replay(self, file):
+    def load_replay(self, record_file):
         self.replay_window.destroy()
+        self.window.destroy()
         # 加载并回放选中的录像
-        print("选择的录像文件：", file)
-        # 这里可以添加加载和回放录像的逻辑
-        # ...
+        print("选择的录像文件：", record_file)
+
+        # 加载和回放录像的逻辑
+        with open(record_file, 'r', encoding='utf-8') as file:
+            record_contents = file.readlines()
+            board_size = int(record_contents[0])
+
+            app = None
+            if self.game_mode == GOMOKU:
+                app = GomokuApp(board_size)
+            elif self.game_mode == GO:
+                app = GoApp(board_size)
+            elif self.game_mode == REVERSI:
+                app = ReversiApp(board_size)
+
+        app.game_gui.window.after(1000, lambda: self.replay_step(app, record_contents, 1))
+        app.game_gui.run()
+
+    def replay_step(self, app, record_contents, index):
+        print(f"Replaying step {index}")  # 调试信息
+        if index < len(record_contents):
+            record_line = record_contents[index]
+            record = record_line.strip('()\n').split(',')
+            opnd = int(record[0])
+            
+            if opnd == PLACESTONE:
+                current_player, current_stone, row, column = record[1:]
+                row = int(row)
+                column = int(column)
+            elif opnd == GIVEUP:
+                current_player, current_stone = record[1:]
+                
+                
+            current_player = current_player.strip("' ")
+            current_stone = current_stone.strip("' ")
+
+            if opnd == PLACESTONE:
+                app.place_piece(row, column, current_player, current_stone)
+            elif opnd == GIVEUP:
+                app.give_up(current_player, current_stone)
+
+            
+            app.game_gui.window.after(1000, lambda: self.replay_step(app, record_contents, index + 1))
 
     def choose_versus_mode(self):
         self.versus1_button = tk.Button(self.window, text="联机对战", command=lambda: self.select_versus_mode(PVP), width=self.button_width, height=self.button_height)

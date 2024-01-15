@@ -4,12 +4,12 @@ class GoApp(BoardGameApp):
     def __init__(self, board_size, current_stone=BLACK, history_board=None, versus_mode=None, difficulty=None):
         super().__init__(board_size, current_stone, history_board, versus_mode, difficulty)
         self.game_mode = GO
-        self.game_pattern = 'go'
+        self.game_pattern = GOPATTERN
         self.happen_ko = False
         self.black_capture_count = 0 # 黑方提子数
         self.white_capture_count = 0 # 白方提子数
 
-    def place_piece(self, row, column):
+    def place_piece(self, row, column, current_player, current_stone):
         self.happen_ko = False
 
         # 检查是否是合法的落子点
@@ -17,8 +17,8 @@ class GoApp(BoardGameApp):
             return False # 如果不合法，立即返回
 
         # 在棋盘上放置棋子并绘制棋子
-        self.board[row][column] = self.current_stone
-        self.draw_stone(row, column)
+        self.board[row][column] = current_stone
+        self.draw_stone(row, column, current_stone)
 
         # 1. 判断是否是自杀点
         if self.if_suicide(row, column):
@@ -26,7 +26,7 @@ class GoApp(BoardGameApp):
             print('captured stones:', captured_stones)
 
             if len(captured_stones) == 0:
-                self.game_gui.update_info('{} 坐标 ({},{}) 没气，禁止自杀！'.format(self.current_stone, row, column))
+                self.game_gui.update_info('{} 坐标 ({},{}) 没气，禁止自杀！'.format(current_stone, row, column))
                 messagebox.showinfo("违规", "禁止出现自杀行为")
                 self.board[row][column] = None
                 self.game_gui.redraw_board(self.board)
@@ -48,8 +48,10 @@ class GoApp(BoardGameApp):
         # 更新棋盘状态和切换玩家
         if not self.happen_ko:
             # 更新游戏信息
-            self.game_gui.update_info(f"玩家 {self.current_player.name} 落子于 ({row}, {column})")
-            self.history_move.append((PLACESTONE, self.current_player.name, self.current_stone, row, column))
+            self.game_gui.update_info(f"玩家 {current_player} 落子于 ({row}, {column})")
+            if not self.versus_mode:
+                return
+            self.history_move.append((PLACESTONE, current_player, current_stone, row, column))
             self.update_board_snapshots()
             if self.can_undo < 2:
                 self.can_undo += 1

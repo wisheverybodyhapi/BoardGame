@@ -18,6 +18,7 @@ class BoardGameApp:
 
         self.can_undo = 0
         self.history_move = []
+        self.history_move.append(self.board_size)
         self.current_stone = current_stone
         self.board = [[None for _ in range(self.board_size)] for _ in range(self.board_size)]
 
@@ -33,20 +34,7 @@ class BoardGameApp:
         self.game_gui.create_buttons(self.give_up, self.undo_move, self.save_game, self.quit_game, self.judge_win, self.quit_move)
 
         # 根据对战模式初始化玩家
-        self.player_1 = None
-        self.player_2 = None
         self.initialize_players(versus_mode)
-    
-        # 总是黑棋先手，随机选择一名玩家为
-        self.BLACKPLAYER = random.choice([self.player_1, self.player_2])
-        self.WHITEPLAYER = self.player_1 if self.BLACKPLAYER == self.player_2 else self.player_2
-
-        self.current_player = self.BLACKPLAYER
-        self.BLACKPLAYER = self.BLACKPLAYER
-        self.WHITEPLAYER = self.WHITEPLAYER
-
-        self.game_gui.update_info("{}执黑子，{}执白子".format(self.BLACKPLAYER.name, self.WHITEPLAYER.name))
-        self.game_gui.update_info("黑子先行，比赛开始！")
         
         self.arrow = None
         self.start_game()
@@ -64,6 +52,20 @@ class BoardGameApp:
         elif versus_mode == SP:
             self.player_1 = HumanPlayer(self, 'gfc')
             self.player_2 = HumanPlayer(self, 'mxy')
+        else:
+            return
+
+        # 如果是播放录像，下面这些都没有必要初始化
+        # 总是黑棋先手，随机选择一名玩家为
+        self.BLACKPLAYER = random.choice([self.player_1, self.player_2])
+        self.WHITEPLAYER = self.player_1 if self.BLACKPLAYER == self.player_2 else self.player_2
+
+        self.current_player = self.BLACKPLAYER
+        self.BLACKPLAYER = self.BLACKPLAYER
+        self.WHITEPLAYER = self.WHITEPLAYER
+
+        self.game_gui.update_info("{}执黑子，{}执白子".format(self.BLACKPLAYER.name, self.WHITEPLAYER.name))
+        self.game_gui.update_info("黑子先行，比赛开始！")
 
     def get_ai_name(self, difficulty=None, difficulty2=None):
         ai_name = None
@@ -109,10 +111,10 @@ class BoardGameApp:
         pass
 
     # 立刻认输button
-    def give_up(self):
+    def give_up(self, current_player, current_stone):
         if not self.game_over:
-            self.history_move.append((GIVEUP, self.current_player.name, self.current_stone))
-            loser = self.current_stone
+            self.history_move.append((GIVEUP, current_player, current_stone))
+            loser = current_stone
             winner = self.WHITEPLAYER if loser == BLACK else self.BLACKPLAYER
             messagebox.showinfo("游戏结束", f"{loser} 认输了，{winner} 赢了！")
             self.game_gui.update_info(f"{loser} 认输了。")
@@ -121,7 +123,7 @@ class BoardGameApp:
 
     def handle_game_end(self):
         # 处理游戏终局的函数
-        # 1. 保存录像
+        # 保存录像
         # 获取当前时间的时间戳
         current_time = time.time()
 
@@ -130,7 +132,7 @@ class BoardGameApp:
 
         # 自定义时间格式
         formatted_time = time.strftime("%Y_%m_%d_%H_%M_%S", time_struct)
-        record_file = '{}_record.txt'.format(formatted_time)
+        record_file = '{}_{}_record.txt'.format(self.game_pattern, formatted_time)
         with open(record_file, "w", encoding='utf-8') as file:
             for historymove in self.history_move:
                 file.write(str(historymove) + '\n')
@@ -187,9 +189,8 @@ class BoardGameApp:
         self.current_stone = WHITE if self.current_stone == BLACK else BLACK
         self.current_player = self.WHITEPLAYER if self.current_player == self.BLACKPLAYER else self.BLACKPLAYER
         if isinstance(self.current_player, AIPlayer):
-            self.game_gui.canvas.after(1000, self.current_player.make_move)  # 1秒后再次调用
-            
-
+            # 1秒后再次调用
+            self.game_gui.canvas.after(1000, self.current_player.make_move)       
 
     def load_game(self, board):
         self.board = board
@@ -210,12 +211,12 @@ class BoardGameApp:
             return True
         return False
 
-    def draw_stone(self, row, column):
+    def draw_stone(self, row, column, current_stone):
         if 0 <= column < self.board_size and 0 <= row < self.board_size:
             # 计算棋子的中心位置
             x = (column + 1) * self.game_gui.cell_size
             y = (row + 1) * self.game_gui.cell_size
-            draw_color = BLACK if self.board[row][column] == BLACK else WHITE
+            draw_color = current_stone
 
             if self.arrow:
                 self.game_gui.canvas.delete(self.arrow)
@@ -230,9 +231,15 @@ class BoardGameApp:
         row = (event.y - self.game_gui.cell_size // 2) // self.game_gui.cell_size
         return row, column
 
-    def place_piece(self, row, column):
+    def place_piece(self, row, column, current_player, current_stone):
         # 落子规则需具体实现
         pass
+
+    def replay_piece(self, opnd, row, column, current_player, current_stone):
+        if opnd == PLACESTONE:
+            self.board[row][column] = current_stone
+            self.draw_stone(row, column, current_stone)
+            
 
     def check_win(self, x, y):
         # 检查胜利条件
