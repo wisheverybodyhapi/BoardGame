@@ -25,9 +25,9 @@ class GomokuApp(BoardGameApp):
             self.can_undo += 1
 
         if self.check_win(row, column):
-            winner = current_player
-            self.game_gui.update_info(f"玩家 {winner} 胜利！游戏结束！")
-            messagebox.showinfo("游戏结束", f"{winner} 赢了！")
+            self.winner = current_player
+            self.game_gui.update_info(f"玩家 {self.winner} 胜利！游戏结束！")
+            messagebox.showinfo("游戏结束", f"{self.winner} 赢了！")
             self.game_over = True
             self.handle_game_end()
         else:

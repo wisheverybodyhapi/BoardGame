@@ -132,6 +132,10 @@ class SettingGUI:
                 row = int(row)
                 column = int(column)
             elif opnd == GIVEUP:
+                current_player, current_stone, opponent_stone = record[1:]
+            elif opnd == QUITMOVE:
+                current_player, current_stone = record[1:]
+            elif opnd == UNDOMOVE:
                 current_player, current_stone = record[1:]
                 
                 
@@ -141,7 +145,12 @@ class SettingGUI:
             if opnd == PLACESTONE:
                 app.place_piece(row, column, current_player, current_stone)
             elif opnd == GIVEUP:
-                app.give_up(current_player, current_stone)
+                opponent_stone = opponent_stone.strip("' ")
+                app.give_up(current_player, current_stone, opponent_stone)
+            elif opnd == QUITMOVE:
+                app.quit_move(current_player, current_stone)
+            elif opnd == UNDOMOVE:
+                app.undo_move(current_player, current_stone)
 
             
             app.game_gui.window.after(1000, lambda: self.replay_step(app, record_contents, index + 1))
@@ -206,7 +215,8 @@ class SettingGUI:
         self.difficulty = difficulty
         self.choose_board_size()
 
-    def choose_board_size(self):
+    def choose_board_size(self, versus_mode=None):
+
         if self.game_mode == GOMOKU:
             self.button_8 = tk.Button(self.window, text="8路棋盘", command=lambda: self.select_board_size(8), width=self.button_width, height=self.button_height)
             self.button_8.pack()
@@ -248,7 +258,7 @@ class SettingGUI:
         self.window.destroy()
         # 列出所有符合当前游戏模式的存档文件
         pattern = self.select_pattern()
-        files = [f for f in os.listdir('.') if f.startswith(pattern) and f.endswith('.txt')]
+        files = [f for f in os.listdir('.') if f.startswith(pattern) and f.endswith('save.txt')]
         if not files:
             messagebox.showinfo("加载存档", "没有找到存档文件")
             return

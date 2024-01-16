@@ -35,6 +35,8 @@ class ReversiApp(BoardGameApp):
             # 在棋盘上放置棋子并绘制棋子
             self.draw_stone(row, column, current_stone)
             self.game_gui.update_info(f"玩家 {current_player} 落子于 ({row}, {column})")
+            if not self.versus_mode:
+                return
             self.switch_player()
         else:
             # 否则恢复棋盘
@@ -65,7 +67,7 @@ class ReversiApp(BoardGameApp):
         
         flip_info = ','.join([str(e) for e in all_pieces_to_flip])
         if all_pieces_to_flip:
-            self.game_gui.update_info("{} {} 被翻转".format(self.get_opponent(), flip_info))
+            self.game_gui.update_info("{} {} 被翻转".format(self.get_opponent(self.current_stone), flip_info))
         return has_flip
 
     def get_click_position(self, event):
@@ -82,25 +84,25 @@ class ReversiApp(BoardGameApp):
         # 计算
         black_count = sum(row.count(BLACK) for row in self.board)
         white_count = sum(row.count(WHITE) for row in self.board)
-        winner = None
+        self.winner = None
         if black_count > white_count:
-            winner = self.BLACKPLAYER.name
+            self.winner = self.BLACKPLAYER.name
         elif white_count > black_count:
-            winner = self.WHITEPLAYER.name
+            self.winner = self.WHITEPLAYER.name
         else:
-            winner = 'Draw'
+            self.winner = 'Draw'
         
-        self.game_gui.update_info("黑子{}，白子{}，玩家 {} 胜利！游戏结束！".format(black_count, white_count, winner))
-        messagebox.showinfo("游戏结束", f"{winner} 赢了！")
+        self.game_gui.update_info("黑子{}，白子{}，玩家 {} 胜利！游戏结束！".format(black_count, white_count, self.winner))
+        messagebox.showinfo("游戏结束", f"{self.winner} 赢了！")
         self.game_over = True
         self.handle_game_end()
 
-    def draw_stone(self, row, column):
+    def draw_stone(self, row, column, player):
         if 0 <= column < self.board_size and 0 <= row < self.board_size:
             # 计算棋子的中心位置
             x = column * self.game_gui.cell_size + self.game_gui.cell_size // 2
             y = row * self.game_gui.cell_size + self.game_gui.cell_size // 2
-            draw_color = BLACK if self.board[row][column] == BLACK else WHITE
+            draw_color = player
             
             if self.arrow:
                 self.game_gui.canvas.delete(self.arrow)

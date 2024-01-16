@@ -1,5 +1,7 @@
 import random
 import time
+import socket
+import threading
 
 BLACK = 'black'
 WHITE = 'white'

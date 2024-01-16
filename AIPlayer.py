@@ -140,11 +140,11 @@ class AIPlayer:
         valid_moves = []
         for row in range(len(board)):
             for col in range(len(board[row])):
-                if self.is_valid_move(board, row, col, current_stone):
+                if self.is_valid_move(board, row, col):
                     valid_moves.append((row, col))
         return valid_moves
 
-    def is_valid_move(self, board, row, column, current_stone):
+    def is_valid_move(self, board, row, column):
         board_size = len(board)
         if not self.current_game.game_over and 0 <= row < board_size and 0 <= column < board_size and self.current_game.board[row][column] is None:
             return True

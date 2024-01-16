@@ -10,6 +10,7 @@ class GoApp(BoardGameApp):
         self.white_capture_count = 0 # 白方提子数
 
     def place_piece(self, row, column, current_player, current_stone):
+        print('current player', current_player, 'current stone', current_stone)
         self.happen_ko = False
 
         # 检查是否是合法的落子点
@@ -27,20 +28,21 @@ class GoApp(BoardGameApp):
 
             if len(captured_stones) == 0:
                 self.game_gui.update_info('{} 坐标 ({},{}) 没气，禁止自杀！'.format(current_stone, row, column))
-                messagebox.showinfo("违规", "禁止出现自杀行为")
+                if self.versus_mode:
+                    messagebox.showinfo("违规", "禁止出现自杀行为")
                 self.board[row][column] = None
                 self.game_gui.redraw_board(self.board)
                 return
             else: # 虽然无气，但是可以提子，仍旧合法
                 if not self.if_happen_ko():
-                    opponent = self.get_opponent()
+                    opponent = self.get_opponent(self.current_stone)
                     captured_stones = [str(s) for s in captured_stones]
                     captured_stones_info = ','.join(captured_stones)
                     self.game_gui.update_info("{} 棋子被提出:{}".format(opponent, captured_stones_info))
         else: # 2. 尝试是否能够正常提子
             captured_stones = self.capture_stones(row, column)
             if captured_stones:
-                opponent = self.get_opponent()
+                opponent = self.get_opponent(self.current_stone)
                 captured_stones = [str(s) for s in captured_stones]
                 captured_stones_info = ','.join(captured_stones)
                 self.game_gui.update_info("{} 棋子被提出:{}".format(opponent, captured_stones_info))
@@ -63,7 +65,11 @@ class GoApp(BoardGameApp):
         # 判断是否发生了打劫，若发生打劫则恢复棋盘
         if self.is_ko():
             # 如果是打劫，撤销刚才的落子，恢复棋盘
-            messagebox.showinfo("违规", "禁止出现打劫行为")
+            
+            if not self.versus_mode:
+                self.game_gui.update_info("违规，出现打劫行为")
+            else:
+                messagebox.showinfo("违规", "禁止出现打劫行为")
             self.board = copy.deepcopy(self.last_1_board)
             self.game_gui.redraw_board(self.board)
             self.happen_ko = True
@@ -119,7 +125,7 @@ class GoApp(BoardGameApp):
     def remove_stones(self, x, y):
         # 从棋盘上移除被围死的棋子，并返回被移除的棋子位置列表
         removed_positions = []
-        opponent = self.get_opponent()
+        opponent = self.get_opponent(self.current_stone)
         stack = [(x, y)]
         while stack:
             x, y = stack.pop()
@@ -130,10 +136,12 @@ class GoApp(BoardGameApp):
         self.game_gui.redraw_board(self.board)
         return removed_positions
             
-    def quit_move(self):
+    def quit_move(self, current_player=None, current_stone=None):
         # 放弃此步
-        self.history_move.append((QUITMOVE, self.current_player.name, self.current_stone))
-        self.game_gui.update_info("{}放弃此步".format(self.current_stone))
+        if not current_player:
+            current_player = self.current_player.name
+        self.history_move.append((QUITMOVE, current_player, current_stone))
+        self.game_gui.update_info("{}放弃此步".format(current_player))
         self.switch_player()
 
     def judge_win(self):
@@ -149,16 +157,15 @@ class GoApp(BoardGameApp):
                                     black_territory, black_score))
         self.game_gui.update_info('白方提子数{}，白方领地面积{}，白方分数{}'.format(white_captures,
                                     white_territory, white_score))
-        winner = None
         if black_score > white_score:
-            winner = self.BLACKPLAYER.name
+            self.winner = self.BLACKPLAYER.name
         elif white_score > black_score:
-            winner = self.WHITEPLAYER.name
+            self.winner = self.WHITEPLAYER.name
         else:
-            winner = '平局'
-        self.game_gui.update_info("黑方让子{}子，玩家 {} 胜利！游戏结束！".format(komi, winner))
-        self.game_gui.update_info(f"玩家 {winner} 胜利！游戏结束！")
-        messagebox.showinfo("游戏结束", f"{winner} 赢了！")
+            self.winner = '平局'
+        self.game_gui.update_info("黑方让子{}子，玩家 {} 胜利！游戏结束！".format(komi, self.winner))
+        self.game_gui.update_info(f"玩家 {self.winner} 胜利！游戏结束！")
+        messagebox.showinfo("游戏结束", f"{self.winner} 赢了！")
         self.game_over = True
         self.handle_game_end()
 

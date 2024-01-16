@@ -9,11 +9,12 @@ import time
 from Config import *
 
 class GameGUI:
-    def __init__(self, board_size):
-        self.board_size = board_size
+    def __init__(self, current_game):
+        self.current_game = current_game
+        self.board_size = current_game.board_size
         self.cell_size = 35  # 设置每个格子的大小
         self.background_image_path = "chessboard.png"
-        self.canvas_size = self.cell_size * board_size
+        self.canvas_size = self.cell_size * self.board_size
         self.width=self.canvas_size + self.cell_size
         self.height=self.canvas_size + self.cell_size
         self.window = tk.Tk()
@@ -77,10 +78,14 @@ class GameGUI:
 
     def create_buttons(self, give_up_callback, undo_move_callback, save_game_callback, quit_game_callback,
                     judge_win_callback, quit_exec_callback):
-        give_up_button = tk.Button(self.info_window, text="立刻认输", command=give_up_callback)
+        current_player = self.current_game.current_player
+        current_stone = self.current_game.current_stone
+        opponent_stone = self.current_game.get_opponent(current_stone)
+        
+        give_up_button = tk.Button(self.info_window, text="立刻认输", command=lambda: give_up_callback(current_player, current_stone, opponent_stone))
         give_up_button.pack()
 
-        undo_button = tk.Button(self.info_window, text="悔棋一步", command=undo_move_callback)
+        undo_button = tk.Button(self.info_window, text="悔棋一步", command=lambda: undo_move_callback(current_player, current_stone))
         undo_button.pack()
 
         save_button = tk.Button(self.info_window, text="保存游戏", command=save_game_callback)
@@ -89,7 +94,7 @@ class GameGUI:
         judge_win = tk.Button(self.info_window, text="判断胜负", command=judge_win_callback)
         judge_win.pack()
         
-        quit_exec = tk.Button(self.info_window, text="放弃此步", command=quit_exec_callback)
+        quit_exec = tk.Button(self.info_window, text="放弃此步", command=lambda: quit_exec_callback(current_player, current_stone))
         quit_exec.pack()
 
         quit_button = tk.Button(self.info_window, text="退出游戏", command=quit_game_callback)
